@@ -1,3 +1,4 @@
+# core/settings.py
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -6,10 +7,13 @@ SECRET_KEY = 'django-insecure-^hzdr0o&n4=beupf(-frtw3qbvn#6)bm@608n_=ul@pg0fb(@x
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'snipping-stack-glorious.ngrok-free.dev',
+    'localhost',
+    '127.0.0.1',
+] 
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -86,3 +90,11 @@ STATIC_URL = 'static/'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
+
+
+MPESA_CONSUMER_KEY = "W92S40J5iXkDRjdAlxRPjrgjciAYA6OmNV8nRBSG8PGenyGT"
+MPESA_CONSUMER_SECRET = "fz3ywf0nsmGaFyBEpyho2qvhI88o8qElFRLiOVKTYGA8ExkFcyO8CSvGp4MFmH2k"
+MPESA_SHORTCODE = "174379"
+
+MPESA_PASSKEY = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+MPESA_CALLBACK_URL = "https://snipping-stack-glorious.ngrok-free.dev/api/mpesa-callback/"
