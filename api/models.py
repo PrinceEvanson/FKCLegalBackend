@@ -36,7 +36,10 @@ class AcademyEnrollment(models.Model):
     tuition_fee = models.CharField(max_length=50, blank=True, null=True)
     payment_method = models.CharField(max_length=50)
     mpesa_phone_number = models.CharField(max_length=50, blank=True, null=True)
+    checkout_request_id = models.CharField(
+        max_length=255, blank=True, null=True)
+    payment_status = models.CharField(max_length=50, default="Pending")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.full_name} - {self.course_title} ({self.payment_method})"
+        return f"{self.full_name} - {self.course_title} ({self.payment_status})"

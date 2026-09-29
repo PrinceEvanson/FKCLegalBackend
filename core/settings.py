@@ -11,7 +11,7 @@ ALLOWED_HOSTS = [
     'snipping-stack-glorious.ngrok-free.dev',
     'localhost',
     '127.0.0.1',
-] 
+]
 
 INSTALLED_APPS = [
     'django.contrib.auth',
@@ -91,10 +91,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-
-MPESA_CONSUMER_KEY = "W92S40J5iXkDRjdAlxRPjrgjciAYA6OmNV8nRBSG8PGenyGT"
-MPESA_CONSUMER_SECRET = "fz3ywf0nsmGaFyBEpyho2qvhI88o8qElFRLiOVKTYGA8ExkFcyO8CSvGp4MFmH2k"
+MPESA_CONSUMER_KEY = "lav2AD9l47jKJANWIpjnGxcmiivQtl6nVHVRnUWeIGdw4bOa"
+MPESA_CONSUMER_SECRET = "c0wCxmYhTiOVzK3qwX4Aoyzi07Vbc2I9xxTzCPj7QWLGqvIIvz5X0fc8NObuyc88"
 MPESA_SHORTCODE = "174379"
-
 MPESA_PASSKEY = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
-MPESA_CALLBACK_URL = "https://snipping-stack-glorious.ngrok-free.dev/api/mpesa-callback/"
+MPESA_CALLBACK_URL = "https://snipping-stack-glorious.ngrok-free.dev/api/mpesa/callback/"
