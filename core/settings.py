@@ -1,19 +1,46 @@
 # core/settings.py
+import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-^hzdr0o&n4=beupf(-frtw3qbvn#6)bm@608n_=ul@pg0fb(@x'
 
-DEBUG = True
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / '.env')
+except ImportError:
+    pass
 
-ALLOWED_HOSTS = [
-    'snipping-stack-glorious.ngrok-free.dev',
-    'localhost',
-    '127.0.0.1',
-]
+
+def env_list(name, default):
+    return [item.strip() for item in os.environ.get(name, default).split(',') if item.strip()]
+
+
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY', 'dev-only-insecure-key-change-me-please-set-DJANGO_SECRET_KEY-in-env')
+
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+
+ALLOWED_HOSTS = env_list(
+    'DJANGO_ALLOWED_HOSTS',
+    'snipping-stack-glorious.ngrok-free.dev,localhost,127.0.0.1',
+)
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
 
 INSTALLED_APPS = [
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -57,11 +84,11 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'fkc_legal_db',
-        'USER': 'fkc_user',
-        'PASSWORD': 'your_secure_password',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'fkc_legal_db'),
+        'USER': os.environ.get('DB_USER', 'fkc_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'your_secure_password'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -87,12 +114,22 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
+CORS_ALLOWED_ORIGINS = env_list(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173',
+)
 
-MPESA_CONSUMER_KEY = "lav2AD9l47jKJANWIpjnGxcmiivQtl6nVHVRnUWeIGdw4bOa"
-MPESA_CONSUMER_SECRET = "c0wCxmYhTiOVzK3qwX4Aoyzi07Vbc2I9xxTzCPj7QWLGqvIIvz5X0fc8NObuyc88"
-MPESA_SHORTCODE = "174379"
-MPESA_PASSKEY = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
-MPESA_CALLBACK_URL = "https://snipping-stack-glorious.ngrok-free.dev/api/mpesa/callback/"
+
+MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', '')
+MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', '')
+MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', '174379')
+MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '')
+MPESA_CALLBACK_URL = os.environ.get(
+    'MPESA_CALLBACK_URL',
+    'https://snipping-stack-glorious.ngrok-free.dev/api/mpesa/callback/',
+)
+
+
+ALLOWED_CONTACT_SUBJECTS = [
+
+]
