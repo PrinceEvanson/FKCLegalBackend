@@ -10,13 +10,17 @@ class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
         fields = '__all__'
-        
+        # Admin-managed fields: the public contact form must not be able to set these.
         read_only_fields = (
             'fulfillment_status',
             'payment_status',
             'price',
             'price_set',
             'fulfilled_at',
+            'is_read',
+            'read_at',
+            'read_by',
+            'updates',
             'created_at',
         )
 
@@ -24,7 +28,8 @@ class ContactMessageSerializer(serializers.ModelSerializer):
         """Only accept a real service title (or "Other") from the public form."""
         value = value.strip()
         allowed = [*getattr(settings, 'ALLOWED_CONTACT_SUBJECTS', []), 'Other']
-        
+        # If ALLOWED_CONTACT_SUBJECTS isn't configured yet, only "Other" would be
+        # allowed, so skip the check until the list is filled in.
         if len(allowed) == 1:
             return value
         lookup = {s.lower(): s for s in allowed}
@@ -55,13 +60,17 @@ class DiplomatInquirySerializer(serializers.ModelSerializer):
     class Meta:
         model = DiplomatInquiry
         fields = '__all__'
-        
+        # Admin-managed fields: the public diplomat form must not be able to set these.
         read_only_fields = (
             'fulfillment_status',
             'payment_status',
             'price',
             'price_set',
             'fulfilled_at',
+            'is_read',
+            'read_at',
+            'read_by',
+            'updates',
             'created_at',
         )
 
@@ -70,7 +79,7 @@ class AcademyEnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = AcademyEnrollment
         fields = '__all__'
-        
+        # Payment state is set only by the server / M-Pesa callback, never by the client.
         read_only_fields = (
             'payment_status',
             'checkout_request_id',

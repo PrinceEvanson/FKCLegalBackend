@@ -196,8 +196,16 @@ class AdminDashboardDataView(views.APIView):
         })
 
 
+def _to_bool(value):
+    return value is True or str(value).lower() in ("true", "1")
+
+
 class InquiryUpdateView(views.APIView):
-    """Shared admin PATCH logic for contact and diplomat inquiries."""
+    """Shared admin PATCH logic for contact and diplomat inquiries.
+
+    Accepted keys: is_read, fulfillment_status, payment_status, price, price_set, add_update.
+    Everything except is_read requires the inquiry to be marked as read first.
+    """
     permission_classes = [IsAdminUser]
     model = None
     serializer_class = None
@@ -211,6 +219,25 @@ class InquiryUpdateView(views.APIView):
 
         data = request.data
         changes = []
+
+        # 1. Read / unread
+        if "is_read" in data:
+            value = _to_bool(data["is_read"])
+            if value != obj.is_read:
+                obj.is_read = value
+                obj.read_at = timezone.now() if value else None
+                obj.read_by = request.user.username if value else ""
+                changes.append(
+                    "marked as read" if value else "marked as unread")
+
+        # 2. Status, price and updates are locked until the inquiry has been read
+        gated_keys = ("fulfillment_status", "payment_status",
+                      "price", "price_set", "add_update")
+        if any(k in data for k in gated_keys) and not obj.is_read:
+            return Response(
+                {"error": "Mark this request as read before changing its status, price or updates."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if "fulfillment_status" in data:
             value = data["fulfillment_status"]
@@ -253,8 +280,22 @@ class InquiryUpdateView(views.APIView):
             obj.price = new_price
             obj.price_set = True
         elif "price_set" in data:
-            obj.price_set = data["price_set"] is True or str(
-                data["price_set"]).lower() == "true"
+            obj.price_set = _to_bool(data["price_set"])
+
+        # 3. Daily situation updates (append-only log)
+        if "add_update" in data:
+            text = str(data["add_update"]).strip()
+            if not text:
+                return Response({"error": "Update text cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+            if len(text) > 2000:
+                return Response({"error": "Update text is too long (2000 characters max)."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            obj.updates = [
+                *(obj.updates or []),
+                {"text": text, "author": request.user.username,
+                    "at": timezone.now().isoformat()}
+            ]
+            changes.append("added a progress update")
 
         if not changes and "price_set" not in data:
             return Response({

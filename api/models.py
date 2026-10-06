@@ -13,6 +13,11 @@ class ContactMessage(models.Model):
     price = models.CharField(max_length=50, default="1,000")
     price_set = models.BooleanField(default=False)
     fulfilled_at = models.DateTimeField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    read_by = models.CharField(max_length=150, blank=True, default="")
+    # Append-only log of daily progress notes: [{"text", "author", "at"}, ...]
+    updates = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -33,6 +38,11 @@ class DiplomatInquiry(models.Model):
     price = models.CharField(max_length=50, default="1,000")
     price_set = models.BooleanField(default=False)
     fulfilled_at = models.DateTimeField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    read_by = models.CharField(max_length=150, blank=True, default="")
+    # Append-only log of daily progress notes: [{"text", "author", "at"}, ...]
+    updates = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
