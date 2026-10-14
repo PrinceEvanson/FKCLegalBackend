@@ -28,10 +28,13 @@ ALLOWED_HOSTS = env_list(
     'snipping-stack-glorious.ngrok-free.dev,localhost,127.0.0.1',
 )
 
+ADMIN_SIGNUP_CODE = os.environ.get('ADMIN_SIGNUP_CODE', '')
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_RATES': {'admin_signup': '5/hour'},
 }
 
 
@@ -119,7 +122,6 @@ CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
     'http://localhost:5173,http://127.0.0.1:5173',
 )
-
 
 MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', '')
 MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', '')

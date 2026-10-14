@@ -1,4 +1,5 @@
 from django.urls import path
+from .admin_signup import admin_signup
 from .views import (
     ContactCreateView,
     ContactUpdateView,
@@ -27,4 +28,5 @@ urlpatterns = [
          name='contact-update'),
     path('admin/diplomats/<int:pk>/update/', DiplomatUpdateView.as_view(),
          name='diplomat-update'),
+    path('admin/signup/', admin_signup, name='admin-signup'),
 ]
