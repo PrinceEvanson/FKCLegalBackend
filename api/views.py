@@ -1,31 +1,42 @@
+import hmac
 import ipaddress
+import os
+import re
 from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import validate_email
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import generics, status, views
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.throttling import SimpleRateThrottle
 
 from .models import (
     AcademyEnrollment,
     AdminActivityLog,
     AdminStatus,
+    CommunityProjectProposal,
     ContactMessage,
     DiplomatInquiry,
+    PartnerInquiry,
 )
 from .serializers import (
     AcademyEnrollmentSerializer,
+    CommunityProjectProposalSerializer,
     ContactMessageSerializer,
     DiplomatInquirySerializer,
+    PartnerInquirySerializer,
 )
 from .utils import initiate_stk_push
 
 VALID_FULFILLMENT_STATUSES = {"Incomplete", "Fulfilled"}
 VALID_PAYMENT_STATUSES = {"Pending", "Completed"}
 MIN_PRICE = 1000
+RESERVED_USERNAMES = {"dev"}
+USERNAME_PATTERN = re.compile(r"[A-Za-z0-9_.-]{3,30}")
 
 
 def get_client_ip(request):
@@ -47,6 +58,16 @@ class ContactCreateView(generics.CreateAPIView):
 class DiplomatCreateView(generics.CreateAPIView):
     queryset = DiplomatInquiry.objects.all()
     serializer_class = DiplomatInquirySerializer
+
+
+class PartnerInquiryCreateView(generics.CreateAPIView):
+    queryset = PartnerInquiry.objects.all()
+    serializer_class = PartnerInquirySerializer
+
+
+class CommunityProjectCreateView(generics.CreateAPIView):
+    queryset = CommunityProjectProposal.objects.all()
+    serializer_class = CommunityProjectProposalSerializer
 
 
 class AcademyEnrollmentCreateView(generics.CreateAPIView):
@@ -167,6 +188,13 @@ class AdminDashboardDataView(views.APIView):
             DiplomatInquiry.objects.all().order_by('-created_at'), many=True
         ).data
 
+        partners = PartnerInquirySerializer(
+            PartnerInquiry.objects.all().order_by('-created_at'), many=True
+        ).data
+        projects = CommunityProjectProposalSerializer(
+            CommunityProjectProposal.objects.all().order_by('-created_at'), many=True
+        ).data
+
         # Activity logs are only ever sent to the 'dev' account.
         activity_logs = []
         if request.user.username == 'dev':
@@ -192,6 +220,8 @@ class AdminDashboardDataView(views.APIView):
             "enrollments": enrollments,
             "contacts": contacts,
             "diplomats": diplomats,
+            "partners": partners,
+            "projects": projects,
             "activity_logs": activity_logs
         })
 
@@ -332,6 +362,80 @@ class DiplomatUpdateView(InquiryUpdateView):
     label = "diplomat inquiry"
 
 
+class PartnerUpdateView(InquiryUpdateView):
+    model = PartnerInquiry
+    serializer_class = PartnerInquirySerializer
+    label = "foundation partnership inquiry"
+
+
+class ProjectUpdateView(InquiryUpdateView):
+    model = CommunityProjectProposal
+    serializer_class = CommunityProjectProposalSerializer
+    label = "community project proposal"
+
+
+class AdminSignupThrottle(SimpleRateThrottle):
+    scope = "admin_signup"
+    THROTTLE_RATES = {"admin_signup": "10/hour"}
+
+    def get_cache_key(self, request, view):
+        forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+        ident = forwarded.split(
+            ",")[-1].strip() or request.META.get("REMOTE_ADDR", "")
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class AdminSignupView(views.APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [AdminSignupThrottle]
+
+    def post(self, request, *args, **kwargs):
+        configured_code = os.environ.get("ADMIN_SIGNUP_CODE", "")
+        provided_code = str(request.data.get("signup_code")
+                            or request.data.get("access_code") or "")
+        if not configured_code or not hmac.compare_digest(provided_code.encode(), configured_code.encode()):
+            return Response({"error": "Invalid access code."}, status=status.HTTP_403_FORBIDDEN)
+
+        username = str(request.data.get("username", "")).strip()
+        email = str(request.data.get("email", "")).strip()
+        password = str(request.data.get("password", ""))
+
+        if not USERNAME_PATTERN.fullmatch(username):
+            return Response(
+                {"error": "Username must be 3 to 30 characters: letters, numbers, dots, dashes or underscores."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if username.lower() in RESERVED_USERNAMES or User.objects.filter(username__iexact=username).exists():
+            return Response({"error": "That username is not available."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if email:
+            try:
+                validate_email(email)
+            except DjangoValidationError:
+                return Response({"error": "Enter a valid email address."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_password(password, user=User(
+                username=username, email=email))
+        except DjangoValidationError as exc:
+            return Response({"error": " ".join(exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.create_user(
+            username=username, email=email, password=password, is_staff=True)
+
+        AdminActivityLog.objects.create(
+            admin=user,
+            action="Created admin account through signup",
+            ip_address=get_client_ip(request)
+        )
+
+        return Response(
+            {"success": True, "message": "Admin account created. You can now sign in."},
+            status=status.HTTP_201_CREATED
+        )
+
+
 class AdminUpdateCredentialsView(views.APIView):
     permission_classes = [IsAdminUser]
 
@@ -349,6 +453,11 @@ class AdminUpdateCredentialsView(views.APIView):
         changes = []
         if new_username:
             new_username = new_username.strip()
+            if new_username.lower() in RESERVED_USERNAMES and user.username.lower() not in RESERVED_USERNAMES:
+                return Response(
+                    {"success": False, "message": "That username is reserved."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             if User.objects.filter(username__iexact=new_username).exclude(pk=user.pk).exists():
                 return Response(
                     {

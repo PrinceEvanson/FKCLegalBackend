@@ -1,5 +1,4 @@
 from django.urls import path
-from .admin_signup import admin_signup
 from .views import (
     ContactCreateView,
     ContactUpdateView,
@@ -9,12 +8,21 @@ from .views import (
     MpesaCallbackView,
     PaymentStatusView,
     AdminDashboardDataView,
-    AdminUpdateCredentialsView
+    AdminUpdateCredentialsView,
+    AdminSignupView,
+    PartnerInquiryCreateView,
+    CommunityProjectCreateView,
+    PartnerUpdateView,
+    ProjectUpdateView
 )
 
 urlpatterns = [
     path('contact/', ContactCreateView.as_view(), name='contact-create'),
     path('diplomat/', DiplomatCreateView.as_view(), name='diplomat-create'),
+    path('foundation/partner/', PartnerInquiryCreateView.as_view(),
+         name='partner-create'),
+    path('foundation/project/', CommunityProjectCreateView.as_view(),
+         name='project-create'),
     path('academy-enroll/', AcademyEnrollmentCreateView.as_view(),
          name='academy-enroll'),
     path('mpesa/callback/', MpesaCallbackView.as_view(), name='mpesa-callback'),
@@ -24,9 +32,13 @@ urlpatterns = [
          name='admin-dashboard-data'),
     path('admin/update-credentials/', AdminUpdateCredentialsView.as_view(),
          name='admin-update-credentials'),
+    path('admin/signup/', AdminSignupView.as_view(), name='admin-signup'),
     path('admin/contacts/<int:pk>/update/', ContactUpdateView.as_view(),
          name='contact-update'),
     path('admin/diplomats/<int:pk>/update/', DiplomatUpdateView.as_view(),
          name='diplomat-update'),
-    path('admin/signup/', admin_signup, name='admin-signup'),
+    path('admin/partners/<int:pk>/update/', PartnerUpdateView.as_view(),
+         name='partner-update'),
+    path('admin/projects/<int:pk>/update/', ProjectUpdateView.as_view(),
+         name='project-update'),
 ]

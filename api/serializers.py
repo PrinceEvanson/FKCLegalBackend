@@ -3,7 +3,13 @@ import re
 from django.conf import settings
 from rest_framework import serializers
 
-from .models import ContactMessage, DiplomatInquiry, AcademyEnrollment
+from .models import (
+    AcademyEnrollment,
+    CommunityProjectProposal,
+    ContactMessage,
+    DiplomatInquiry,
+    PartnerInquiry,
+)
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
@@ -85,3 +91,60 @@ class AcademyEnrollmentSerializer(serializers.ModelSerializer):
             'checkout_request_id',
             'created_at',
         )
+
+
+FOUNDATION_READ_ONLY = (
+    'fulfillment_status',
+    'fulfilled_at',
+    'is_read',
+    'read_at',
+    'read_by',
+    'updates',
+    'created_at',
+)
+
+
+class PartnerInquirySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PartnerInquiry
+        fields = '__all__'
+        read_only_fields = FOUNDATION_READ_ONLY
+
+    def validate_message(self, value):
+        value = value.strip()
+        if len(value) < 10:
+            raise serializers.ValidationError(
+                'Please tell us a little more about how you would like to help.')
+        return value
+
+    def validate_number(self, value):
+        if not value:
+            return value
+        cleaned = re.sub(r'[\s\-().]', '', value)
+        if not re.fullmatch(r'\+?\d{9,15}', cleaned):
+            raise serializers.ValidationError(
+                'Enter a valid phone number, e.g. 0712345678.')
+        return cleaned
+
+
+class CommunityProjectProposalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityProjectProposal
+        fields = '__all__'
+        read_only_fields = FOUNDATION_READ_ONLY
+
+    def validate_message(self, value):
+        value = value.strip()
+        if len(value) < 20:
+            raise serializers.ValidationError(
+                'Please describe the project in a little more detail.')
+        return value
+
+    def validate_number(self, value):
+        if not value:
+            return value
+        cleaned = re.sub(r'[\s\-().]', '', value)
+        if not re.fullmatch(r'\+?\d{9,15}', cleaned):
+            raise serializers.ValidationError(
+                'Enter a valid phone number, e.g. 0712345678.')
+        return cleaned

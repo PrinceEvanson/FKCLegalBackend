@@ -49,6 +49,41 @@ class DiplomatInquiry(models.Model):
         return f"{self.name} - {self.subject or 'Diplomatic Inquiry'}"
 
 
+class FoundationRequest(models.Model):
+    name = models.CharField(max_length=255)
+    organization = models.CharField(max_length=255, blank=True, default="")
+    email = models.EmailField()
+    number = models.CharField(max_length=50, blank=True, null=True)
+    message = models.TextField()
+    fulfillment_status = models.CharField(max_length=50, default="Incomplete")
+    fulfilled_at = models.DateTimeField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    read_by = models.CharField(max_length=150, blank=True, default="")
+    updates = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        abstract = True
+
+
+class PartnerInquiry(FoundationRequest):
+    partnership_type = models.CharField(max_length=255, blank=True, default="")
+
+    def __str__(self):
+        return f"{self.name} - {self.partnership_type or 'Foundation Partnership'}"
+
+
+class CommunityProjectProposal(FoundationRequest):
+    project_title = models.CharField(max_length=255, blank=True, default="")
+    location = models.CharField(max_length=255, blank=True, default="")
+    beneficiaries = models.CharField(max_length=255, blank=True, default="")
+    budget_estimate = models.CharField(max_length=100, blank=True, default="")
+
+    def __str__(self):
+        return f"{self.name} - {self.project_title}"
+
+
 class AcademyEnrollment(models.Model):
     full_name = models.CharField(max_length=255)
     age = models.IntegerField()
