@@ -17,6 +17,10 @@ from .views import (
 )
 
 urlpatterns = [
+    path('foundation/partner/', PartnerInquiryCreateView.as_view()),
+    path('foundation/project/', CommunityProjectCreateView.as_view()),
+    path('admin/partners/<int:pk>/update/', PartnerUpdateView.as_view()),
+    path('admin/projects/<int:pk>/update/', ProjectUpdateView.as_view()),
     path('contact/', ContactCreateView.as_view(), name='contact-create'),
     path('diplomat/', DiplomatCreateView.as_view(), name='diplomat-create'),
     path('foundation/partner/', PartnerInquiryCreateView.as_view(),
